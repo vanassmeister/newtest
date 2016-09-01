@@ -13,7 +13,7 @@ echo GridView::widget([
         'rx',
         'title',
         [
-            'label' => '',
+            'label' => 'NDC\'s',
             'content' => function($val) {
                 $ndcs = array_map(function($val) {
                         return $val->ndc;

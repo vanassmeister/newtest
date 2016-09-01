@@ -5,7 +5,9 @@ use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
 use yii\data\ActiveDataProvider;
-
+use yii\data\SqlDataProvider;
+use yii\db\Query;
+use yii\db\Expression;
 use app\models\LoginForm;
 use app\models\ContactForm;
 use app\models\TbSource;
@@ -131,9 +133,35 @@ class SiteController extends Controller
             ->distinct()
             ->joinWith('rels', true, 'INNER JOIN')
             ->where(['like', 'title', 'title 1%', false]);
-        
+
         $dataProvider = new ActiveDataProvider(['query' => $query]);
-        
+
         return $this->render('orm', ['dataProvider' => $dataProvider]);
+    }
+
+    public function actionBuilder()
+    {
+        $query = (new Query)
+            ->select([
+                'ts.id',
+                'ts.cx',
+                'ts.rx',
+                'ts.title',
+                new Expression("GROUP_CONCAT(tr.ndc SEPARATOR ', ') as ndcs")
+            ])
+            ->from('tb_source ts')
+            ->innerJoin('tb_rel tr', 'ts.cx = tr.cx')
+            ->groupBy(['ts.id', 'ts.cx', 'ts.rx', 'ts.title',])
+            ->where("ts.title like 'title 1%'");
+        
+        $dataProvider = new SqlDataProvider([
+            'sql' => $query->createCommand()->getSql(),
+            'totalCount' => $query->count(),
+            'pagination' => [
+                'pageSize' => 20,
+            ],
+        ]);
+        
+        return $this->render('builder', ['dataProvider' => $dataProvider]);
     }
 }
