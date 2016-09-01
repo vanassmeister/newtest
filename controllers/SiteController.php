@@ -135,10 +135,16 @@ class SiteController extends Controller
             ->from('tb_rel');
 
         $query = TbSource::find()
+            ->with('rels')
             ->innerJoin(['tt' => $subQuery], 'tb_source.cx = tt.cx')
             ->where(['like', 'title', 'title 1%', false]);
 
         $dataProvider = new ActiveDataProvider(['query' => $query]);
+
+        // Кэширование
+        TbSource::getDb()->cache(function ($db) use ($dataProvider) {
+            $dataProvider->prepare();
+        });
 
         return $this->render('orm', ['dataProvider' => $dataProvider]);
     }
@@ -164,11 +170,15 @@ class SiteController extends Controller
             ],
         ]);
 
-        $cxPage = array_map(function($val) {
-            return $val['cx'];
-        }, $dataProvider->getModels());
-        
-        $ndcs = (new Query)
+        // Кэширование
+        $ndcs = Yii::$app->db->cache(function ($db) use ($dataProvider) {
+            $dataProvider->prepare();
+            
+            $cxPage = array_map(function($val) {
+                return $val['cx'];
+            }, $dataProvider->getModels());            
+            
+            return (new Query)
             ->select([
                 'cx',
                 new Expression("GROUP_CONCAT(ndc SEPARATOR ', ') as ndcs")
@@ -178,7 +188,8 @@ class SiteController extends Controller
             ->where(['cx' => $cxPage])
             ->indexBy('cx')
             ->all();
-
+        });        
+        
         return $this->render('builder', [
                 'dataProvider' => $dataProvider,
                 'ndcs' => $ndcs
