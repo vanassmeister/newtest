@@ -3,6 +3,7 @@
  * @author Ivan Nikiforov
  * Sep 1, 2016
  */
+
 use yii\grid\GridView;
 
 echo GridView::widget([
@@ -14,7 +15,9 @@ echo GridView::widget([
         'title',
         [
             'label' => 'NDC\'s',
-            'attribute' => 'ndcs',
+            'content' => function($row) use ($ndcs) {
+                return $ndcs[$row['cx']]['ndcs'];
+            },
             'contentOptions' => ['style' => 'max-width: 200px;']
         ]
     ],

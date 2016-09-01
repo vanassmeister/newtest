@@ -141,17 +141,15 @@ class SiteController extends Controller
 
     public function actionBuilder()
     {
+        
+        $subQuery = (new Query)
+            ->distinct()
+            ->select('cx')
+            ->from('tb_rel');
+        
         $query = (new Query)
-            ->select([
-                'ts.id',
-                'ts.cx',
-                'ts.rx',
-                'ts.title',
-                new Expression("GROUP_CONCAT(tr.ndc SEPARATOR ', ') as ndcs")
-            ])
             ->from('tb_source ts')
-            ->innerJoin('tb_rel tr', 'ts.cx = tr.cx')
-            ->groupBy(['ts.id', 'ts.cx', 'ts.rx', 'ts.title',])
+            ->innerJoin(['tt' => $subQuery], 'ts.cx = tt.cx')
             ->where("ts.title like 'title 1%'");
         
         $dataProvider = new SqlDataProvider([
@@ -162,6 +160,21 @@ class SiteController extends Controller
             ],
         ]);
         
-        return $this->render('builder', ['dataProvider' => $dataProvider]);
+        $cxPage = array_map(function($val) {return $val['cx'];}, $dataProvider->getModels());
+        $ndcs = (new Query)
+            ->select([
+                'cx',
+                new Expression("GROUP_CONCAT(ndc SEPARATOR ', ') as ndcs")
+            ])
+            ->from('tb_rel')
+            ->groupBy('cx')
+            ->where(['cx' => $cxPage])
+            ->indexBy('cx')
+            ->all();
+        
+        return $this->render('builder', [
+            'dataProvider' => $dataProvider,
+            'ndcs' => $ndcs
+        ]);
     }
 }
