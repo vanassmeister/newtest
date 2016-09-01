@@ -1,16 +1,18 @@
-<?php
-
-namespace app\controllers;
+<?php namespace app\controllers;
 
 use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
+use yii\data\ActiveDataProvider;
+
 use app\models\LoginForm;
 use app\models\ContactForm;
+use app\models\TbSource;
 
 class SiteController extends Controller
 {
+
     /**
      * @inheritdoc
      */
@@ -79,7 +81,7 @@ class SiteController extends Controller
             return $this->goBack();
         }
         return $this->render('login', [
-            'model' => $model,
+                'model' => $model,
         ]);
     }
 
@@ -109,7 +111,7 @@ class SiteController extends Controller
             return $this->refresh();
         }
         return $this->render('contact', [
-            'model' => $model,
+                'model' => $model,
         ]);
     }
 
@@ -121,5 +123,17 @@ class SiteController extends Controller
     public function actionAbout()
     {
         return $this->render('about');
+    }
+
+    public function actionOrm()
+    {
+        $query = TbSource::find()
+            ->distinct()
+            ->joinWith('rels', true, 'INNER JOIN')
+            ->where(['like', 'title', 'title 1%', false]);
+        
+        $dataProvider = new ActiveDataProvider(['query' => $query]);
+        
+        return $this->render('orm', ['dataProvider' => $dataProvider]);
     }
 }
