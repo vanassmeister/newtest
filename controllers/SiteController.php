@@ -129,9 +129,13 @@ class SiteController extends Controller
 
     public function actionOrm()
     {
-        $query = TbSource::find()
+        $subQuery = (new Query)
             ->distinct()
-            ->joinWith('rels', true, 'INNER JOIN')
+            ->select('cx')
+            ->from('tb_rel');
+
+        $query = TbSource::find()
+            ->innerJoin(['tt' => $subQuery], 'tb_source.cx = tt.cx')
             ->where(['like', 'title', 'title 1%', false]);
 
         $dataProvider = new ActiveDataProvider(['query' => $query]);
@@ -141,17 +145,17 @@ class SiteController extends Controller
 
     public function actionBuilder()
     {
-        
+
         $subQuery = (new Query)
             ->distinct()
             ->select('cx')
             ->from('tb_rel');
-        
+
         $query = (new Query)
             ->from('tb_source ts')
             ->innerJoin(['tt' => $subQuery], 'ts.cx = tt.cx')
             ->where("ts.title like 'title 1%'");
-        
+
         $dataProvider = new SqlDataProvider([
             'sql' => $query->createCommand()->getSql(),
             'totalCount' => $query->count(),
@@ -159,8 +163,11 @@ class SiteController extends Controller
                 'pageSize' => 20,
             ],
         ]);
+
+        $cxPage = array_map(function($val) {
+            return $val['cx'];
+        }, $dataProvider->getModels());
         
-        $cxPage = array_map(function($val) {return $val['cx'];}, $dataProvider->getModels());
         $ndcs = (new Query)
             ->select([
                 'cx',
@@ -171,10 +178,10 @@ class SiteController extends Controller
             ->where(['cx' => $cxPage])
             ->indexBy('cx')
             ->all();
-        
+
         return $this->render('builder', [
-            'dataProvider' => $dataProvider,
-            'ndcs' => $ndcs
+                'dataProvider' => $dataProvider,
+                'ndcs' => $ndcs
         ]);
     }
 }
